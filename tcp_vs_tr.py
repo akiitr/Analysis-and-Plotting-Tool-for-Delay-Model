@@ -31,8 +31,8 @@ print("""
          trb(breaking point) value will be choosen as last value and will be 
          traversed backword to optimize the fit. Press ENTER for DEFAULT.
       6. chi_sq value can be used to increase or decrease the tolerance of variation
-         0.12 value corresponds to 2% variation from the data points. By default 
-         this value will be 0.12. Press ENTER for DEFAULT.
+         0.15 value corresponds to 2% variation from the data points. By default 
+         this value will be 0.15. Press ENTER for DEFAULT.
       7. The pararmeter defined in the model will be at output with std deviation
          along with the user defined model.
       8. With the given chi_sq value the Model's result will be shown either
@@ -49,7 +49,12 @@ print("""
       """)
 
 #reading the excel file
-filename = input("Enter the filename for tcp_vs_tr.xlsx file: ")
+print("Enter the filename or press enter for tcp_vs_tr.xlsx file in next line:")
+filename = input("Enter the filename or press enter for tcp_vs_tr.xlsx file: ")
+
+if filename == '':
+    filename = "tcp_vs_tr.xlsx"
+
 try:
     d = pd.read_excel(filename)
 except:
@@ -67,18 +72,20 @@ row, col = d.shape
 
 #Taking the user input considering the default value
 try:
-    trb = int(input("\nEnter the approx breaking point value it will be optimized backwards: "))
+    print("\nEnter the approx breaking point value it will be optimized backwards: ")
+    trb = int(input("Enter the approx breaking point value it will be optimized backwards: "))
 except:
     print("\nsome invalid input is enterd.....")
     print("Going for the default value as max of tr and move backwards for optimization")
     trb = int(d['tr'].iloc[-2])
 
 try:
-    chi_user = float(input("\nEnter the chi_sq value near by 0.12 "))
+    print("\nEnter the chi_sq value near by 0.15: ")
+    chi_user = float(input("Enter the chi_sq value near by 0.15 "))
 except:
     print("\nsome invalid input is enterd.....")
-    print("choosing default value of chi_sq as 0.12")
-    chi_user = 0.12
+    print("choosing default value of chi_sq as 0.15")
+    chi_user = 0.15 #we can't make it huge as the way pc diff is checkrd from start
     
 #adding a standard deviation column for better fit
 std = 0.5
@@ -149,9 +156,13 @@ while trb>1:
   chisq2 = sum((d2['tcp'] - model2(d2['tr'],fit_a,fit_b))**2/d2['tcp'])
 
   #checking for validity of fit of model1
-  if chisq1 > chi_user:
-    print("Could not optimize on trb value: %.1f"%trb)
+  if ((chisq1 > chi_user)):
+    print("Could not optimize on trb value: %.1f" %trb)
     trb = trb - 3
+    if trb < int(d['tr'].iloc[2]):
+        print("\n\nModel can not be optimized for the taken chi_sqr value kindly increase it")
+        print("Exitiing....")
+        sys.exit()
     continue
   else:
     print("Optimized trb value: %.1f"%trb)
@@ -213,6 +224,19 @@ def avg(lst):
 #Getting the average of the cl values to get the idea of their location
 trb1 = avg(cl1['tr'].tolist())
 trb2 = avg(cl2['tr'].tolist())
+
+#if cl1 and cl2 are nan that means it is being perfectly fit by single model alone
+#in that case it is better to display a message for same
+if(math.isnan(trb1)):
+    print("\nWith given input model1 is self sufficient for fitting data point")
+    cl1 = d_op.loc[d_op['tr'].idxmax()]
+    trb1 = cl1['tr']
+
+if(math.isnan(trb2)):
+    print("\nWith given input model2 is self sufficient for fitting data point")
+    tr2 = d_op.loc[d_op['pcdiff2'].idxmax()]
+    trb2 =cl2['tr']
+
 
 #Testing wether the model has passsed or not
 if (trb1 >= trb2):
