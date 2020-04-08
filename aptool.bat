@@ -9,6 +9,8 @@ echo --------------------------------------------------------
 echo Kindly Choose an option from below functions
 echo Enter 1: for inv_tcp_vs_cl
 echo Enter 2: for inv_tcp_vs_tr
+echo Enter 3: for buf_tcp_vs_cl
+echo Enter 4: for buf_tcp_vs_tr
 echo Enter 0: for Exitting.
 echo --------------------------------------------------------
 SET /P choice="Enter your choice as stated above: "
@@ -26,6 +28,20 @@ call :start
 :case_2
 echo "You have choosen inv_tcp_vs_tr starting...."
 python inv_tcp_vs_tr.py
+echo Close image to continue....
+tcp_vs_tr.png
+call :start
+
+:case_3
+echo "You have choosen buf_tcp_vs_cl starting...."
+python buf_tcp_vs_cl.py
+echo Close image to continue....
+tcp_vs_cl.png
+call :start
+
+:case_4
+echo "You have choosen buf_tcp_vs_tr starting...."
+python buf_tcp_vs_tr.py
 echo Close image to continue....
 tcp_vs_tr.png
 call :start
