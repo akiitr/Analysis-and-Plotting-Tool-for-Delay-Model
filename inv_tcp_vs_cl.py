@@ -166,7 +166,7 @@ while clb < int(d['cl'].iloc[-2]):
   if ((chisq1 > chi_user)):
     print("Could not optimize on clb value: %.1f" %clb)
     clb = clb + 2
-    if clb > int(d['cl'].iloc[-2]):
+    if clb > int(d['cl'].iloc[-3]):
         print("\n\nModel can not be optimized for the taken chi_sqr value kindly increase it")
         print("Exitiing....")
         sys.exit()

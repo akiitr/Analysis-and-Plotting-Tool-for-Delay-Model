@@ -77,7 +77,7 @@ try:
 except:
     print("\nsome invalid input is enterd.....")
     print("Going for the default value as max of tr and move backwards for optimization")
-    trb = int(d['tr'].iloc[-2])
+    trb = int(d['tr'].iloc[-3])
 
 try:
     print("\nEnter the chi_sq value near by 0.15: ")
@@ -159,7 +159,7 @@ while trb>1:
   if ((chisq1 > chi_user)):
     print("Could not optimize on trb value: %.1f" %trb)
     trb = trb - 3
-    if trb < int(d['tr'].iloc[2]):
+    if trb < int(d['tr'].iloc[3]):
         print("\n\nModel can not be optimized for the taken chi_sqr value kindly increase it")
         print("Exitiing....")
         sys.exit()
