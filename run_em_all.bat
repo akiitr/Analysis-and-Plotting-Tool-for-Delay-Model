@@ -12,7 +12,8 @@ echo Step 1: Put run_em_all.py and batch script in the same folder as the text f
 echo Step 2: Run run_em_all and choose 1 to run it
 echo choose 0 to exit and report any error to akiitr at git hub
 echo --------------------------------------------------------
-echo Enter 1: for running run_em_all
+echo Enter 1: for running run_em_all_buf
+echo Enter 2: for running run_em_all_inv
 echo Enter 0: for Exitting.
 echo --------------------------------------------------------
 SET /P choice="Enter your choice as stated above: "
@@ -21,8 +22,13 @@ if errorlevel 1 call :default #for unidentified input
 
 
 :case_1
-echo "You have choosen run_em_all starting...."
-python run_em_all.py
+echo "You have choosen run_em_all_buf.py starting...."
+python run_em_all_buf.py
+call :start
+
+:case_2
+echo "You have choosen run_em_all_inv.py starting...."
+python run_em_all_inv.py
 call :start
 
 :default
