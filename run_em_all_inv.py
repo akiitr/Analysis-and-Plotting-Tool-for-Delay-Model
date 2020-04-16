@@ -63,7 +63,7 @@ def tcp_vs_cl_model1_check(d,filename):
     d_op['pcdiff1'] =( abs( d_op['tcp'] - d_op['y_model1']) / d['tcp'] *100)
     
     #Finding the 2% variation point
-    cl1 = d_op.loc[(d_op['pcdiff1'] > 0.8) & (d_op['pcdiff1'] < 99)]
+    cl1 = d_op.loc[(d_op['pcdiff1'] > 1) & (d_op['pcdiff1'] < 99)]
     #Definig the averaging the values if multiple values come from selection
     def avg(lst): 
         return sum(lst) / len(lst)
@@ -100,6 +100,148 @@ def tcp_vs_cl_model1_check(d,filename):
         print("Model Failed :-( with clb: %.2f"%clb1)
         return 0  
 
+def tcp_vs_cl_model2_check(d, clb, filename):
+    
+    
+    d1 = d.loc[d['cl'] >  clb]
+    d2 = d.loc[d['cl'] <= clb]
+    
+    def model1(x,m,p):
+        return m*x+p
+    
+    def model2(x,a,b,c):
+        return a+sqrt(b+(c*x))
+    
+    init_guess_m1 = [1,1]
+    init_guess_m2 = [-5000,1e7,1e5]
+    
+    fit1 = curve_fit(model1, d1['cl'],d1['tcp'], p0=init_guess_m1)
+    #Capturing error in case model 2 doesn't converge
+    try:
+        fit2 = curve_fit(model2, d2['cl'],d2['tcp'], p0=init_guess_m2)
+    except:
+        print("model 2 is not converging so returning 0 PLS increase clb")
+        return 1
+    
+    ans,cov = fit1
+    fit_m,fit_p = ans
+    fit_sm,fit_sp = sqrt(diag(cov))
+    
+    # unpacking the fit results for model2:
+    ans,cov = fit2
+    fit_a,fit_b,fit_c = ans
+    fit_sa,fit_sb,fit_sc = sqrt(diag(cov))
+    
+    
+    #t = linspace(1,100,50, dtype=int)
+    #t = array([int(x*2) for x in range(1, 51)])
+    #Best method to calculate the t is to copy x axis from xls data
+    t=array(d['cl'].tolist())
+    
+    #output from model 1
+    y_model1 = model1(t,fit_m,fit_p) 
+    y_model2 = model2(t,fit_a,fit_b,fit_c)
+    
+    # computing chi-square
+    # Compute the value of Chi-Square goodness of fit test using the following formula:
+    # Chi-Square = ( (E-O)**2 / E )
+    # Where, Chi-Square = goodness of fit test O= observed value E= expected value
+    
+    #chisq for model1:
+    chisq1 = sum((d1['tcp'] - model1(d1['cl'],fit_m,fit_p))**2/d1['tcp'])
+    #chisq for model2:
+    chisq2 = sum((d2['tcp'] - model2(d2['cl'],fit_a,fit_b,fit_c))**2/d2['tcp'])
+
+    # printing the fit results for model1:
+    print("\nModel1: y=mx+p ")
+    print("m: %.2f +/- %.2f"%(fit_m,fit_sm))
+    print("p: %.2f +/- %.2f"%(fit_p,fit_sp))
+    
+    # printing the fit results model2:
+    print("\nModel2: y= a+sqrt(b+(c*x))")
+    print("a: %.2f +/- %.2f"%(fit_a,fit_sa))
+    print("b: %.2f +/- %.2f"%(fit_b,fit_sb))
+    print("c: %.2f +/- %.2f"%(fit_c,fit_sc))
+    
+    # ploting the data and fit results
+    errorbar(d['cl'],d['tcp'],fmt='.y', label="data")
+    xlabel("cl (ff)")
+    ylabel("tcp (ps)")
+    
+    #changing the x axis for partial plotting of model1 and 2
+    t1 = array(d1['cl'].tolist())
+    t2 = array(d2['cl'].tolist())
+    
+    #re claculating the model outputs according to trimmed x axis
+    y_model1_temp = model1(t1,fit_m,fit_p) 
+    y_model2_temp = model2(t2,fit_a,fit_b,fit_c)
+    
+    #plotting the result for the models
+    plot(t1, y_model1_temp, label="model1")
+    plot(t2, y_model2_temp, label="model2")
+    legend()
+    
+    #Adding the chisquare value to figure
+    figtext(0.5,0.3,"chi-square1: %.2f"%chisq1,fontweight="bold")
+    figtext(0.5,0.2,"chi-square2: %.2f"%chisq2,fontweight="bold")
+    
+    #Processing in a new dataframe for 2% error points which are clb's
+    d_op = d
+    d_op['y_model1'] = y_model1.tolist()
+    d_op['y_model2'] = y_model2.tolist()
+    #y_model1.tolist()
+    #y_model1.shape
+    #y_model2.shape
+    
+    #calculating the percentage difference for both model from data tcp
+    d_op['pcdiff1'] = ( abs( d_op['tcp'] - d_op['y_model1']) / d['tcp'] *100)
+    d_op['pcdiff2'] = ( abs( d_op['tcp'] - d_op['y_model2']) / d['tcp'] *100)
+    
+    #Finding the 2% variation point
+    cl1 = d_op.loc[(d_op['pcdiff1'] > 2) & (d_op['pcdiff1'] < 2.5)]
+    cl2 = d_op.loc[(d_op['pcdiff2'] > 2) & (d_op['pcdiff2'] < 2.5)]
+    
+    #Definig the averaging the values if multiple values come from selection
+    def avg(lst): 
+        return sum(lst) / len(lst)
+    
+    #Getting the average of the cl values to get the idea of their location
+    clb1 = avg(cl1['cl'].tolist())
+    clb2 = avg(cl2['cl'].tolist())
+    
+    #if cl1 and cl2 are nan that means it is being perfectly fit by single model alone
+    #in that case it is better to display a message for same
+    if(math.isnan(clb1)):
+        print("\nWith given input model1 is self sufficient for fitting data point")
+        cl1 = d_op.loc[d_op['pcdiff1'].idxmax()]
+        clb1 = cl1['cl']
+    
+    if(math.isnan(clb2)):
+        print("\nWith given input model2 is self sufficient for fitting data point")
+        cl2 = d_op.loc[d_op['cl'].idxmax()]
+        clb2 =cl2['cl']
+    
+    #Testing wether the model has passsed or not
+    if (clb1 <= clb2):
+      print('\nThe model has Passed the test input\n')
+      print("clb: %.1f, clb1: %.1f, clb2: %.1f"%(clb, clb1, clb2))
+    #  figtext(0.5, 0.5, "Passed")
+    else:
+      print('\nSorry But your Model FAILED!! :-( \n')
+      print("clb: %.1f, clb1: %.1f, clb2: %.1f"%(clb, clb1, clb2))
+      #figtext(0.5, 0.5, "FAILED!! :-( ")
+
+    figtext(0.5,0.4, "Optimized clb: %.2f"%clb)
+
+    print("\nWriting output file to " + filename[:-4] + ".xlsx")
+    d_op.to_excel(filename[:-4] + '.xlsx')
+    print("\nsaving the figure as " + filename[:-4] + ".png")
+    savefig(filename[:-4] +'.png', dpi=400)
+    #clearing axis and closing files
+    cla() #clears the axis
+    clf() #clears the figure 
+    close() #closes the figure window
+    return 0
 
 
 def tcp_vs_cl(d, filename):
@@ -115,7 +257,8 @@ def tcp_vs_cl(d, filename):
     std = 0.5
     op_std = std + rand(row)*std/10
     d['op_std'] = op_std
-    flag = 0
+    flag1 = 0
+    flag2 = 0
     #Define the break up point
     #cause we are trying to maximize the fit of line as per lomash sir procedure
     #that's why looping is changed here as line fits from back so we move forward
@@ -123,173 +266,46 @@ def tcp_vs_cl(d, filename):
     
       #changed in equality than cl as model1 will be fitted on the initial data
       d1 = d.loc[d['cl'] >= clb]
-      flag = tcp_vs_cl_model1_check(d1, 0) #0 for no p;otting
+      flag1 = tcp_vs_cl_model1_check(d1, 0) #0 for no p;otting
       
-      if flag == 1:
+      if flag1 == 1:
           break
       else:
           clb = clb + 2
           continue
-    print(flag)
+    print(flag1)
     print(clb)
     #Checking for wether it has passed or not
-    if ((flag == 1) & (clb == int(d['cl'].iloc[0])) ):
+    if ((flag1 == 1) & (clb == int(d['cl'].iloc[0])) ):
         print ("model 1: y=m*x+p is self sufficient for this data")
         tcp_vs_cl_model1_check(d, filename)
         return
     
-    if ((flag == 1) & (clb != int(d['cl'].iloc[0])) ):
+    if ((flag1 == 1) & (clb != int(d['cl'].iloc[0])) ):
         
         print ("model 1: y=m*x+p is ***NOT*** self sufficient for this data")
         
-        if (clb < (int(d['cl'].iloc[5])) ):
+        if (clb < (int(d['cl'].iloc[3])) ):
             print("Extending the model bondary due to min no of point requirement")
-            clb = int(d['cl'].iloc[4])
+            clb = int(d['cl'].iloc[3])
         
-        print(clb)
+        while clb < int(d['cl'].iloc[-3]):
+            print("clb value is: %.2f"%clb)
+            print("going in for fitting....")
+            flag2 = tcp_vs_cl_model2_check(d, clb, filename)
+            if (flag2 == 0):
+                break
+            elif(flag2 ==1):
+                print("increasing the CLB Value as the model 2 is not converging")
+                clb = clb+2
+                continue
+            else:
+                print("Model is not fitting or there is some problem in the code")
+                return
         
-        d1 = d.loc[d['cl'] >  clb]
-        d2 = d.loc[d['cl'] <= clb]
-        
-        def model1(x,m,p):
-            return m*x+p
-        
-        def model2(x,a,b,c):
-            return a+sqrt(b+(c*x))
-        
-        init_guess_m1 = [1,1]
-        init_guess_m2 = [-5000,1e7,1e5]
-        
-        fit1 = curve_fit(model1, d1['cl'],d1['tcp'], p0=init_guess_m1)
-        #Capturing error in case model 2 doesn't converge
-        try:
-            fit2 = curve_fit(model2, d2['cl'],d2['tcp'], p0=init_guess_m2)
-        except:
-            print("model 2 is not converging so going ahead with complete model 1 fit")
-            tcp_vs_cl_model1_check(d, filename)
-            return
-        
-        ans,cov = fit1
-        fit_m,fit_p = ans
-        fit_sm,fit_sp = sqrt(diag(cov))
-        
-        # unpacking the fit results for model2:
-        ans,cov = fit2
-        fit_a,fit_b,fit_c = ans
-        fit_sa,fit_sb,fit_sc = sqrt(diag(cov))
-        
-        
-        #t = linspace(1,100,50, dtype=int)
-        #t = array([int(x*2) for x in range(1, 51)])
-        #Best method to calculate the t is to copy x axis from xls data
-        t=array(d['cl'].tolist())
-        
-        #output from model 1
-        y_model1 = model1(t,fit_m,fit_p) 
-        y_model2 = model2(t,fit_a,fit_b,fit_c)
-        
-        # computing chi-square
-        # Compute the value of Chi-Square goodness of fit test using the following formula:
-        # Chi-Square = ( (E-O)**2 / E )
-        # Where, Chi-Square = goodness of fit test O= observed value E= expected value
-        
-        #chisq for model1:
-        chisq1 = sum((d1['tcp'] - model1(d1['cl'],fit_m,fit_p))**2/d1['tcp'])
-        #chisq for model2:
-        chisq2 = sum((d2['tcp'] - model2(d2['cl'],fit_a,fit_b,fit_c))**2/d2['tcp'])
-
-        # printing the fit results for model1:
-        print("\nModel1: y=mx+p ")
-        print("m: %.2f +/- %.2f"%(fit_m,fit_sm))
-        print("p: %.2f +/- %.2f"%(fit_p,fit_sp))
-        
-        # printing the fit results model2:
-        print("\nModel2: y= a+sqrt(b+(c*x))")
-        print("a: %.2f +/- %.2f"%(fit_a,fit_sa))
-        print("b: %.2f +/- %.2f"%(fit_b,fit_sb))
-        print("c: %.2f +/- %.2f"%(fit_c,fit_sc))
-        
-        # ploting the data and fit results
-        errorbar(d['cl'],d['tcp'],fmt='.y', label="data")
-        xlabel("cl (ff)")
-        ylabel("tcp (ps)")
-        
-        #changing the x axis for partial plotting of model1 and 2
-        t1 = array(d1['cl'].tolist())
-        t2 = array(d2['cl'].tolist())
-        
-        #re claculating the model outputs according to trimmed x axis
-        y_model1_temp = model1(t1,fit_m,fit_p) 
-        y_model2_temp = model2(t2,fit_a,fit_b,fit_c)
-        
-        #plotting the result for the models
-        plot(t1, y_model1_temp, label="model1")
-        plot(t2, y_model2_temp, label="model2")
-        legend()
-        
-        #Adding the chisquare value to figure
-        figtext(0.5,0.3,"chi-square1: %.2f"%chisq1,fontweight="bold")
-        figtext(0.5,0.2,"chi-square2: %.2f"%chisq2,fontweight="bold")
-        
-        #Processing in a new dataframe for 2% error points which are clb's
-        d_op = d
-        d_op['y_model1'] = y_model1.tolist()
-        d_op['y_model2'] = y_model2.tolist()
-        #y_model1.tolist()
-        #y_model1.shape
-        #y_model2.shape
-        
-        #calculating the percentage difference for both model from data tcp
-        d_op['pcdiff1'] = ( abs( d_op['tcp'] - d_op['y_model1']) / d['tcp'] *100)
-        d_op['pcdiff2'] = ( abs( d_op['tcp'] - d_op['y_model2']) / d['tcp'] *100)
-        
-        #Finding the 2% variation point
-        cl1 = d_op.loc[(d_op['pcdiff1'] > 2) & (d_op['pcdiff1'] < 2.5)]
-        cl2 = d_op.loc[(d_op['pcdiff2'] > 2) & (d_op['pcdiff2'] < 2.5)]
-        
-        #Definig the averaging the values if multiple values come from selection
-        def avg(lst): 
-            return sum(lst) / len(lst)
-        
-        #Getting the average of the cl values to get the idea of their location
-        clb1 = avg(cl1['cl'].tolist())
-        clb2 = avg(cl2['cl'].tolist())
-        
-        #if cl1 and cl2 are nan that means it is being perfectly fit by single model alone
-        #in that case it is better to display a message for same
-        if(math.isnan(clb1)):
-            print("\nWith given input model1 is self sufficient for fitting data point")
-            cl1 = d_op.loc[d_op['pcdiff1'].idxmax()]
-            clb1 = cl1['cl']
-        
-        if(math.isnan(clb2)):
-            print("\nWith given input model2 is self sufficient for fitting data point")
-            cl2 = d_op.loc[d_op['cl'].idxmax()]
-            clb2 =cl2['cl']
-        
-        #Testing wether the model has passsed or not
-        if (clb1 <= clb2):
-          print('\nThe model has Passed the test input\n')
-          print("clb: %.1f, clb1: %.1f, clb2: %.1f"%(clb, clb1, clb2))
-        #  figtext(0.5, 0.5, "Passed")
-        else:
-          print('\nSorry But your Model FAILED!! :-( \n')
-          print("clb: %.1f, clb1: %.1f, clb2: %.1f"%(clb, clb1, clb2))
-          #figtext(0.5, 0.5, "FAILED!! :-( ")
-
-        figtext(0.5,0.4, "Optimized clb: %.2f"%clb)
-
-        print("\nWriting output file to " + filename[:-4] + ".xlsx")
-        d_op.to_excel(filename[:-4] + '.xlsx')
-        print("\nsaving the figure as " + filename[:-4] + ".png")
-        savefig(filename[:-4] +'.png', dpi=400)
-        #clearing axis and closing files
-        cla() #clears the axis
-        clf() #clears the figure 
-        close() #closes the figure window
-        return
     else:
         print("Model is not able to pass from any input leaving this datapoint: %.2f"%filename)
+        return
 
 
 
