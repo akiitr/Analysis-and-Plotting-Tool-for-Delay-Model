@@ -306,9 +306,8 @@ def tcp_vs_cl(d, filename):
     else:
         print("Model is not able to pass from any input leaving this datapoint: %.2f"%filename)
         return
-
-
-
+    
+    
 def tcp_vs_tr(d, filename):
     
     row, col = d.shape
@@ -322,7 +321,7 @@ def tcp_vs_tr(d, filename):
     #Autoamating the task of chossing the trb value and chi_sqr value
     #Trb value
     print("Going for the default value as max of tr and move backwards for optimization")
-    trb = int(d['tr'].iloc[-3])
+    trb = int(d['tr'].iloc[-4])
     #chi_sq value
     print("choosing default value of chi_sq as 0.15")
     chi_user = 0.15 #we can't make it huge as the way pc diff is checkrd from start
@@ -474,10 +473,10 @@ def tcp_vs_tr(d, filename):
     
     if(math.isnan(trb2)):
         print("\nWith given input model2 is self sufficient for fitting data point")
-        tr2 = d_op.loc[d_op['pcdiff2'].idxmax()]
+        cl2 = d_op.loc[d_op['pcdiff2'].idxmax()]
         trb2 =cl2['tr']
     
-    
+
     #Testing wether the model has passsed or not
     if (trb1 >= trb2):
       print('\nThe model has Passed the test input\n')
