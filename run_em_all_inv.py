@@ -35,6 +35,9 @@ def tcp_vs_cl_model1_check(d,filename):
     fit_m,fit_p = ans
     fit_sm,fit_sp = sqrt(diag(cov))
     
+
+    
+    
     # printing the fit results for model1:
     print("\nModel (m*x)+p")
     print("m: %.2f +/- %.2f"%(fit_m,fit_sm))
@@ -88,6 +91,12 @@ def tcp_vs_cl_model1_check(d,filename):
         cla() #clears the axis
         clf() #clears the figure 
         close() #closes the figure window
+        csv_fname = filename[:-4] + '_param.csv'
+        with open(csv_fname, 'w') as fd:
+            fd.write("Model y=mx+p , m, p")
+            fd.write("\nAbs Values ,%.2f,%.2f"%(fit_m,fit_p))
+            fd.write("\nstd Values ,%.2f,%.2f"%(fit_sm,fit_sp))
+            fd.write("\n")
 
     
     if(math.isnan(clb1)):
@@ -151,6 +160,16 @@ def tcp_vs_cl_model2_check(d, clb, filename):
     chisq1 = sum((d1['tcp'] - model1(d1['cl'],fit_m,fit_p))**2/d1['tcp'])
     #chisq for model2:
     chisq2 = sum((d2['tcp'] - model2(d2['cl'],fit_a,fit_b,fit_c))**2/d2['tcp'])
+    
+    csv_fname = filename[:-4] + '_param.csv'
+    with open(csv_fname, 'w') as fd:
+        fd.write("Model y=mx+p , m, p")
+        fd.write("\nAbs Values ,%.2f,%.2f"%(fit_m,fit_p))
+        fd.write("\nstd Values ,%.2f,%.2f"%(fit_sm,fit_sp))
+        fd.write("\n")
+        fd.write("\nModel y= a+sqrt(b+(c*x)) , a, b, c")
+        fd.write("\nAbs Values ,%.2f,%.2f,%.2f"%(fit_a,fit_b,fit_c))
+        fd.write("\nstd Values ,%.2f,%.2f,%.2f"%(fit_sa,fit_sb,fit_sc))
 
     # printing the fit results for model1:
     print("\nModel1: y=mx+p ")
@@ -324,7 +343,7 @@ def tcp_vs_tr(d, filename):
     trb = int(d['tr'].iloc[-4])
     #chi_sq value
     print("choosing default value of chi_sq as 0.15")
-    chi_user = 0.15 #we can't make it huge as the way pc diff is checkrd from start
+    chi_user = 0.25 #we can't make it huge as the way pc diff is checkrd from start
     
     #adding a standard deviation column for better fit
     std = 0.5
@@ -355,7 +374,7 @@ def tcp_vs_tr(d, filename):
       #initially guessing the values diiferent based on different condition
       init_guess_m1 = [1,1]
     
-      init_guess_m2 = [-5000,1e7]
+      init_guess_m2 = [1,10]
     
       #fit = curve_fit(model, d['cl'],d['tcp'],sigma=d['s_tcp'], p0=init_guess, absolute_sigma=True)
       #fit for model 1
@@ -406,6 +425,19 @@ def tcp_vs_tr(d, filename):
       else:
         print("Optimized trb value: %.1f"%trb)
         break
+    
+    
+    #Writing down the model parameter as CSV
+    csv_fname = filename[:-4] + '_param.csv'
+    with open(csv_fname, 'w') as fd:
+        fd.write("Model y=mx+p , m, p")
+        fd.write("\nAbs Values ,%.2f,%.2f"%(fit_m,fit_p))
+        fd.write("\nstd Values ,%.2f,%.2f"%(fit_sm,fit_sp))
+        fd.write("\n")
+        fd.write("\nModel y= (a*x)+b*sqrt(x) , a, b")
+        fd.write("\nAbs Values ,%.2f,%.2f"%(fit_a,fit_b))
+        fd.write("\nstd Values ,%.2f,%.2f"%(fit_sa,fit_sb))
+    
     
     # printing the fit results for model1:
     print("\nModel1: y=mx+p ")
@@ -506,6 +538,7 @@ all_files = os.listdir('.')
 tr_files = list(filter(lambda x: x[-6 :] == 'ff.txt', all_files))
 cl_files = list(filter(lambda x: x[-6 :] == 'ps.txt', all_files))
 
+'''
 for x in tr_files:
     with open(x,'r') as fd:
         fobj = fd.read().strip()
@@ -522,7 +555,8 @@ for x in tr_files:
     #sending the designed datframe to plotting and anlysis tool
     print("\nGoing for analysis of file: " + x)
     tcp_vs_tr(d,x)
-    
+
+'''   
 for x in cl_files:
     with open(x, 'r') as fd:
         fobj = fd.read().strip()
