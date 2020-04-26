@@ -343,7 +343,7 @@ def tcp_vs_tr(d, filename):
     trb = int(d['tr'].iloc[-4])
     #chi_sq value
     print("choosing default value of chi_sq as 0.15")
-    chi_user = 0.25 #we can't make it huge as the way pc diff is checkrd from start
+    chi_user = 0.2 #we can't make it huge as the way pc diff is checkrd from start
     
     #adding a standard deviation column for better fit
     std = 0.5
@@ -538,7 +538,6 @@ all_files = os.listdir('.')
 tr_files = list(filter(lambda x: x[-6 :] == 'ff.txt', all_files))
 cl_files = list(filter(lambda x: x[-6 :] == 'ps.txt', all_files))
 
-'''
 for x in tr_files:
     with open(x,'r') as fd:
         fobj = fd.read().strip()
@@ -556,7 +555,6 @@ for x in tr_files:
     print("\nGoing for analysis of file: " + x)
     tcp_vs_tr(d,x)
 
-'''   
 for x in cl_files:
     with open(x, 'r') as fd:
         fobj = fd.read().strip()
