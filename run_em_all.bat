@@ -14,6 +14,7 @@ echo choose 0 to exit and report any error to akiitr at git hub
 echo --------------------------------------------------------
 echo Enter 1: for running run_em_all_buf
 echo Enter 2: for running run_em_all_inv
+echo Enter 3: for running run_em_all_inv_trail
 echo Enter 0: for Exitting.
 echo --------------------------------------------------------
 SET /P choice="Enter your choice as stated above: "
@@ -29,6 +30,11 @@ call :start
 :case_2
 echo "You have choosen run_em_all_inv.py starting...."
 python run_em_all_inv.py
+call :start
+
+:case_3
+echo "You have choosen run_em_all_inv_trial.py starting...."
+python run_em_all_inv_trial.py
 call :start
 
 :default
